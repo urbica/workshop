@@ -1,0 +1,168 @@
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Open Weather Map</title>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
+    <script src='https://api.mapbox.com/mapbox.js/v2.2.1/mapbox.js'></script>
+    <link href='https://api.mapbox.com/mapbox.js/v2.2.1/mapbox.css' rel='stylesheet' />
+  </head>
+<body>
+
+<style>
+body { margin:0; padding:0; }
+#map { position:absolute; top:0; bottom:0; width:100%; }
+* { font-family: Roboto Medium, Arial, Sans-Serif; }
+.city-icon {
+  display: flex;;
+  min-width: 100px;
+  padding: 0;
+  height: 20px;
+  font-size: 13px;
+  color: #444444;
+}
+
+.city-bullet {
+  display: inline-block;
+  padding: 0px 5px;
+  font-size: 15px;
+  line-height: 20px;
+  vertical-align: center;
+  text-align: center;
+  color: #444444;
+}
+
+.city-name {
+  display: inline-block;
+  padding: 0px 5px;
+  line-height: 20px;
+  vertical-align: center;
+  text-align: center;
+  color: rgba(0, 0, 0, 0.7);
+  background: rgba(0,0,0,0.5);
+}
+.city-weather {
+  display: inline-block;
+  padding: 0px 5px;
+  line-height: 20px;
+  min-width: 20px;
+  font-size: 12px;
+  vertical-align: center;
+  text-align: center;
+  color: white;
+  background: rgba(0, 0, 0, 0.8);
+}
+
+.weather-very-hot {
+  background: rgba(247,103,80,1);
+}
+
+.weather-hot {
+  background: rgba(245,179,67,1);
+}
+
+.weather-average {
+  background: rgba(255,229,92,1)
+}
+
+.weather-cold {
+  background: rgba(89,188,255,1);
+}
+
+.weather-very-cold {
+  background: rgba(10,92,173,1);
+}
+
+.weather-none {
+  background: grey;
+}
+
+</style>
+
+<div id='map'></div>
+
+<script type="text/javascript">
+
+  L.mapbox.accessToken = 'pk.eyJ1IjoibWluaWthcm1hIiwiYSI6IkRjTUFYdGsifQ.30RhErOKbQvLJ1kOnAl73A';
+  var map = L.mapbox.map('map').setView([30, 30], 2);
+
+
+  var citiesLayer = L.mapbox.featureLayer();
+
+  //adding layers control
+  L.control.layers({
+    'OpenWeatherMap': L.mapbox.tileLayer('tayachill.df062d5e').addTo(map),
+    'Light': L.mapbox.tileLayer('mapbox.light'),
+    'Dark': L.mapbox.tileLayer('mapbox.dark')
+  }, {
+    'Clouds': L.mapbox.tileLayer('minikarma.db52cf7a').addTo(map),
+    'Borders':  L.mapbox.tileLayer('minikarma.128917bf').addTo(map),
+    'Weather': citiesLayer.addTo(map)
+  }).addTo(map);
+
+$.ajax({
+    url: '../data/cities.geojson',
+    dataType: 'json',
+    type: 'GET',
+//				data: {client_id: accessToken},
+    success: function(data){
+      console.log(data.features);
+      data.features.forEach(function(feature) {
+        var temp = 99; //Math.floor((0.5 - Math.random(1))*50);
+        if(feature.properties['TEMP']) temp = feature.properties['TEMP'];
+        var cityName = feature.properties['NAME'].replace(" ", "&nbsp;");
+      //  var tempName = (feature.properties['TEMP'] < 0) ? ("–" + feature.properties['TEMP']) : ("–" + feature.properties['TEMP'])
+
+  //      console.log(cityName);
+        feature.properties['icon'] = {
+        "className": "city-icon", // class name to style
+        "html": '<span class="city-bullet">•</span><span class="city-name ' + getTempClass(temp) +'">'  + cityName + '</span><span class="city-weather"> +&nbsp;' + temp + ' </span>', // add content inside the marker
+        "iconSize": null // size of icon, use null to set the size in CSS
+      };
+      });
+
+      citiesLayer.on('layeradd', function(e) {
+        var marker = e.layer,
+            feature = marker.feature;
+        marker.setIcon(L.divIcon(feature.properties.icon));
+        marker.bindPopup(feature.properties['NAME']);
+      });
+      citiesLayer.setGeoJSON(data);
+
+      citiesLayer.setFilter(function(feature) {
+      return ((map.getZoom() - 3) >= feature.properties['SCALERANK']);
+      });
+
+      map.on('zoomend', function() {
+          citiesLayer.setFilter(function(feature) {
+          return (((map.getZoom() - 3) >= feature.properties['SCALERANK']) && feature.properties['TEMP']);
+          });
+      });
+
+
+    },
+    error: function(data){
+    }
+  });
+
+function getTempClass(t) {
+  var c = 'weather-none';
+//  if(t <= - 20) c = 'weather-very-cold';
+
+  if(t > - 20 && t <= 6) c = 'weather-cold';
+  if(t <= 2) c = 'weather-very-cold';
+  if(t > 6 && t <= 20) c = 'weather-average';
+  if(t > 20 && t <=28) c = 'weather-hot';
+  if(t > 28) c = 'weather-very-hot';
+  return c;
+}
+
+
+
+
+</script>
+  </body>
+</html>

@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset=utf-8 />
+<title>A simple map</title>
+<meta name='viewport' content='initial-scale=1,maximum-scale=1,user-scalable=no' />
+<script src="http://d3js.org/d3.v3.min.js"></script>
+<script src='https://api.mapbox.com/mapbox.js/v2.2.2/mapbox.js'></script>
+<link href='https://api.mapbox.com/mapbox.js/v2.2.2/mapbox.css' rel='stylesheet' />
+<style>
+  body { margin:0; padding:0; }
+  #map { position:absolute; top:0; bottom:0; width:100%; }
+
+  .label {
+    margin-left: -14px;
+    margin-top: -6px;
+    display: block;
+    width: 28px;
+    height: 18px;
+    line-height: 18px;
+    text-align: center;
+    font-family: sans-serif, Arial;
+    font-size: 10px;
+    color: white;
+    line-height: 13px;
+    text-shadow: 0px 0px 3px #000000;
+  }
+
+</style>
+</head>
+<body>
+<div id='map'></div>
+<script type="text/javascript">
+
+document.addEventListener('DOMContentLoaded', function() {
+
+  L.mapbox.accessToken = 'pk.eyJ1IjoibWluaWthcm1hIiwiYSI6IkRjTUFYdGsifQ.30RhErOKbQvLJ1kOnAl73A';
+  var map = L.mapbox.map('map', 'mapbox.light')
+      .setView([55.744537,37.625224], 11);
+
+  //adding empty layer
+  var stationsLayer = L.mapbox.featureLayer().addTo(map);
+
+
+
+
+  d3.tsv("../data/bike_stations.csv", function(d,i) {
+
+    //console.log(d);
+
+  var stationPopup = "<b>"  + d.name + "</b><br/>capacity: " + d.capacity;
+  L.circleMarker([d.lat,d.lon], {
+    radius: d.capacity,
+    fillColor: "#00CC77",
+    stroke: false,
+    fillOpacity: 0.5
+  })
+  .bindPopup(stationPopup)
+  .on('click', function(e) { console.log('click'); })
+  .addTo(stationsLayer);
+
+  },
+   function(d){
+        // data imported
+        console.log('data loaded');
+	     }
+  );
+
+
+
+});
+</script>
+</body>
+</html>

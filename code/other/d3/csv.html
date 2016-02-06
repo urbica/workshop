@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<title>bike stations</title>
+<meta name='viewport' content='initial-scale=1,maximum-scale=1,user-scalable=no' />
+<body>
+<ul id="stationsList" />
+
+</ul>
+<script src="http://d3js.org/d3.v3.min.js"></script>
+
+<script>
+var stationsList = d3.select("#stationsList");
+//loading stations CSV
+
+d3.tsv("../data/bike_stations.csv", function(d,i) {
+  stationsList.append("li")
+    .text(d.name + '/ вместимость: ' + d.capacity)
+    .on('click', function() {
+      console.log(d.name + ' / ' + d.capacity);
+    });
+  //console.log(d);
+
+  },
+   function(d){
+        // data imported
+//        console.log('data loaded');
+
+	     }
+  );
+</script>
+</body>
+</html>

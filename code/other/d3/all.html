@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<title>bike stations</title>
+<meta name='viewport' content='initial-scale=1,maximum-scale=1,user-scalable=no' />
+
+<style>
+
+body {
+  margin: 0;
+  background: #222;
+  min-width: 600px;
+  font-family: Helvetica, Arial, Sans-Serif;
+  color: #aaa;
+  font-size: 15px;
+}
+
+
+a ,a:visited {
+	color: #ccc;
+}
+
+rect {
+  fill: none;
+  pointer-events: all;
+}
+
+circle {
+  fill: none;
+  stroke-width: 2.5px;
+}
+
+#page {
+	display: block;
+	overflow: hidden;
+	width: 100%;
+	height: 100%;
+}
+</style>
+<body>
+<div id="content"></div>
+
+<script src="http://d3js.org/d3.v3.min.js"></script>
+<script src="http://d3js.org/topojson.v1.min.js"></script>
+
+<script>
+
+var width = 1000, height = 850;
+//var stations = [], stationsPositions = [], stationsIndex = [];
+var body = d3.select("body");
+
+var svg = d3.select("#content").append("svg")
+    .attr("width", width)
+    .attr("height", height);
+
+
+//viewport area in coordinates
+var extent = [[37.51,55.65],[-37.70,55.81]];
+
+//specifying projection
+var projection = d3.geo.mercator()
+	.center([37.5986,55.7501])
+	.scale(250000);
+
+var path = d3.geo.path()
+		.projection(projection);
+
+var parksPath = d3.geo.path()
+		.projection(projection);
+
+
+//setting the area
+var rect = svg.append("svg:g")
+	.attr("width", width)
+	.attr("height", height)
+	.attr("id", "rect");
+
+var parks = rect.append("svg:g")
+	.attr("id", "parks");
+
+var streets = rect.append("svg:g")
+	.attr("id", "streets");
+
+var stationsPoints = rect.append("svg:g")
+	.attr("id", "stations");
+
+//loading
+d3.json("../data/parks.geojson", function(collection) {
+	parks.selectAll("#parks")
+	  .data(collection.features)
+	  .enter().append("svg:path","parks")
+	  .attr("fill", "rgba(0,100,15,0.5)")
+	  .style("stroke-width", 1)
+	  .attr("d", parksPath);
+	});
+
+d3.json("../data/streets.geojson", function(collection) {
+	  streets.selectAll("#streetsLines")
+	    .data(collection.features)
+	    .enter().append("svg:path","streetsLines")
+		.attr("fill", "none")
+		.style("stroke", "rgba(140,140,140,0.25)")
+		.style("stroke-width", 1.5)
+	    .attr("d", path);
+	});
+
+
+//loading stations CSV
+d3.tsv("../data/bike_stations.csv", function(d,i) {
+
+	//getting lonlat
+	var location = projection([d.lon, d.lat]);
+	var fill = d3.hsl((i = (i*3) % 360), 1, .5); //d3.rgb(48,196,196); //d3.hsl((i = (i*3) % 360), 1, .5);
+	console.log(fill);
+
+	stationsPoints.append("circle", "stationsPoints")
+       .attr("cx", location[0])
+       .attr("cy", location[1])
+	   .style("fill", fill)
+     .style("opacity", 0.5)
+	   .style("stroke-width", 0)
+	   .style("cursor", "pointer")
+     .attr("r", Math.sqrt(d.capacity)*5)
+ 	   .on("mouseenter", function(z){
+		   d3.select(this)
+		   .transition()
+		   .duration(800)
+		   .ease("linear")
+		   .attr("r", Math.sqrt(d.capacity)*30);
+	   })
+     .on("mouseout", function(z){
+     d3.select(this)
+     .transition()
+     .duration(800)
+     .ease("bounce")
+     .attr("r", Math.sqrt(d.capacity)*5);
+    })
+		.on("click", function(z){
+ 		   d3.select(this)
+ 		   .transition()
+ 		   .duration(500)
+ 		   .ease(Math.sqrt)
+ 		   //.style("opacity", .8)
+ 		   .attr("r", Math.sqrt(d.capacity)*50)
+		   .style("opacity", 0)
+ 		   .transition()
+ 		   .duration(500)
+		   .ease("linear")
+		   .attr("r", Math.sqrt(d.capacity)*5)
+		   .style("opacity", 1);
+	   });
+
+   },
+   function(d){
+        // data imported
+	}
+	);
+
+</script>
+</body>
+</html>

@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<title>bike stations</title>
+<meta name='viewport' content='initial-scale=1,maximum-scale=1,user-scalable=no' />
+
+<style>
+
+body {
+  margin: 0;
+  background: #222;
+  min-width: 600px;
+  font-family: Helvetica, Arial, Sans-Serif;
+  color: #aaa;
+  font-size: 15px;
+}
+</style>
+<body>
+<div id="content"></div>
+
+<script src="http://d3js.org/d3.v3.min.js"></script>
+<script src="http://d3js.org/topojson.v1.min.js"></script>
+
+<script>
+
+var width = 1000, height = 850;
+var body = d3.select("body");
+
+var svg = d3.select("#content").append("svg")
+    .attr("width", width)
+    .attr("height", height);
+
+//viewport area in coordinates
+var extent = [[37.51,55.65],[-37.70,55.81]];
+
+//specifying projection
+var projection = d3.geo.mercator()
+	.center([37.5986,55.7501])
+	.scale(250000);
+
+//specifying roads path
+var path = d3.geo.path()
+		.projection(projection);
+
+//setting the area
+var rect = svg.append("svg:g")
+	.attr("width", width)
+	.attr("height", height)
+	.attr("id", "rect");
+
+//streets
+var streets = rect.append("svg:g")
+	.attr("id", "streets");
+
+//loading roads layer
+d3.json("../data/streets.geojson", function(collection) {
+	  streets.selectAll("#streetsLines")
+	    .data(collection.features)
+	    .enter().append("svg:path","streetsLines")
+		  .attr("fill", "none")
+		  .style("stroke", "rgba(200,0,200,0.25)")
+		  .style("stroke-width", 1.5)
+	    .attr("d", path);
+	});
+
+</script>
+</body>
+</html>

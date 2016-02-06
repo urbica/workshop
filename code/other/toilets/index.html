@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset=utf-8 />
+<title>A simple map</title>
+<meta name='viewport' content='initial-scale=1,maximum-scale=1,user-scalable=no' />
+<script src="http://yandex.st/jquery/2.1.1/jquery.min.js" type="text/javascript"></script>
+<script src='https://api.tiles.mapbox.com/mapbox.js/v2.1.5/mapbox.js'></script>
+<link href='https://api.tiles.mapbox.com/mapbox.js/v2.1.5/mapbox.css' rel='stylesheet' />
+<script src='https://api.tiles.mapbox.com/mapbox.js/plugins/turf/v2.0.0/turf.min.js'></script>
+<style>
+  body { margin:0; padding:0; }
+  #map { position:absolute; top:0; bottom:0; width:100%; }
+</style>
+</head>
+<body>
+<script src='https://api.tiles.mapbox.com/mapbox.js/plugins/leaflet-heat/v0.1.3/leaflet-heat.js'></script>
+<div id='map'></div>
+<script>
+
+$(function () {
+
+	L.mapbox.accessToken = 'pk.eyJ1IjoibWluaWthcm1hIiwiYSI6IkRjTUFYdGsifQ.30RhErOKbQvLJ1kOnAl73A';
+	var map = L.mapbox.map('map', 'minikarma.ldf5734b')
+		.setView([55.754230,37.621900], 13);
+
+	//Setting Turf.js  grid params
+	var extent = [37.35,55.56,37.90,55.92],
+		cellWidth = 1,
+		units = 'kilometers';
+
+	//Creating the squareGrid
+	var squareGrid = turf.squareGrid(extent, cellWidth, units);
+	squareGrid.features.forEach(function(f,i) {
+	f.properties.stroke = 0;
+	f.properties.fill = '#088';
+	f.properties['id'] = i;
+	});
+
+//	console.log(squareGrid);
+	jQuery.getJSON('data/wc.json', function(json) {
+
+	console.time('json processed');
+
+	var sourcePoints = json; //turf.featurecollection(json.features);
+
+
+	//setting id for each polygon in grid
+	squareGrid.features.forEach(function(cell,i) {
+		cell.properties['pid'] = i;
+	});
+
+	//spatial join on polygons and points
+	console.time('Turf tag');
+	var tagged = turf.tag(sourcePoints, squareGrid, 'pid', 'pid');
+    console.log(tagged);
+	console.timeEnd('Turf tag');
+
+//	tagged.features.forEach(function(p,i) {
+//		console.log(p.properties);
+//	});
+
+	console.time('Set totals');
+	var filtered, total;
+	squareGrid.features.forEach(function(cell,i) {
+		//filtering points on cell
+		filtered = turf.filter(tagged, 'id', i);
+		cell.properties['fill-opacity'] = (filtered.features.length/10);
+		cell.properties['title'] = filtered.features.length;
+	});
+	console.timeEnd('Set totals');
+
+	//grid layer adding
+	var gridLayer = L.mapbox.featureLayer(squareGrid);
+	//gridLayer.addTo(map);
+
+	//heatmap layer
+	var heat = L.heatLayer([], {
+        maxZoom: 15,
+        max: 0.8,
+        radius: 40,
+		minOpacity: 0.5,
+		blur: 30,
+		gradient: {0.4: 'green', 0.65: 'yellow', 1: 'red'}
+	});
+
+	//L.geoJson(sourcePoints, { style: L.mapbox.simplestyle.style }).addTo(map);
+
+	sourcePoints.features.forEach(function(item,i) {
+        //console.log(item.properties.Disability);
+        var marker = L.marker([item.geometry.coordinates[1],item.geometry.coordinates[0]], {
+            icon: L.mapbox.marker.icon({
+              'marker-color': getColor(item.properties.Disability),
+              'marker-symbol': 'toilets',
+              'marker-size': 'medium'
+            })
+          });
+
+
+        var circle = L.circle([item.geometry.coordinates[1],item.geometry.coordinates[0]], 400, {
+        	fillColor: getColor(item.properties.Disability),
+			color: getColor(item.properties.Disability),
+			weight: 1,
+			opacity: 0.5,
+			fillOpacity: 0.3
+        });
+
+
+
+        circle.addTo(map);
+        marker.addTo(map);
+
+		//heat.addLatLng(marker.getLatLng());
+
+	});
+
+
+	heat.addTo(map);
+
+
+	console.timeEnd('json processed');
+	});
+
+
+
+
+});
+
+function getColor(type) {
+	if (type == 'приспособлен') return '#088';
+	 else return '#aaa';
+}
+
+</script>
+</body>
+</html>
